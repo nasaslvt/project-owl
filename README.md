@@ -15,16 +15,18 @@ Install rtl_test, rtl_fm, etc.
 `apt-get install rtl-sdr sox`
 
 Build and install the latest direwolf (1.6 at time of this writing)
-`apt-get install git gcc g++ make cmake libasound2-dev libudev-dev`
-`cd ~`
-`mkdir src && cd src`
-`git clone https://www.github.com/wb2osz/direwolf`
-`mkdir build && cd build`
-`cmake ..`
-`make -j4`
-`sudo make install`
-`make install-conf`
-`exit`
+```bash
+sudo apt-get install git gcc g++ make cmake libasound2-dev libudev-dev
+cd ~
+mkdir src && cd src
+git clone https://www.github.com/wb2osz/direwolf
+mkdir build && cd build
+cmake ..
+make -j4
+sudo make install
+make install-conf
+exit
+```
 
 ### Using rtl_fm
 Reference guide: http://kmkeen.com/rtl-demod-guide/
