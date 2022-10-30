@@ -38,5 +38,9 @@ Copy `receive.conf` from this repository to `~/conf/receive.conf`
 ### Using rtl_fm
 Reference guide: http://kmkeen.com/rtl-demod-guide/
 To listen to FM radio: `rtl_fm -M wbfm -f 90.7M | sox -r 32k -t raw -e s -b 16 -c 1 -V1 - test.wav`
-To use rtl_fm and Dire Wolf: `rtl_fm  -f 144.39M - | direwolf -c ~/conf/receive.conf -n 1 -r 24000 -b 16 -`
+To use rtl_fm and Dire Wolf: `rtl_fm  -f 145.70M - | direwolf -c receive.conf` or run `receive.sh`.
+We are using **145.70 MHz** as our test frequency, although APRS for North America is 144.39M. 
+
+## Debugging
+The user running Dire Wolf must be a member of the `audio` group.
 
