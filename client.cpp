@@ -17,16 +17,10 @@ int create_tcp_socket()
     return socket(AF_INET, SOCK_STREAM, 0); // sys/socket.h
 }
 
-// dyanmically allocates a sockaddr_in struct and fills it
-sockaddr_in* create_server(int port, const char *address_string)
+// creates a sockaddr_in struct and fills it
+sockaddr_in create_server(int port, const char *address_string)
 {
-    struct sockaddr_in *server = (sockaddr_in *) calloc(1, sizeof(sockaddr_in)); // the sockaddr_in will be cast to sockaddr later netinet/in.h
-
-    server->sin_family = AF_INET;
-    cout << "Port to set: " << port << "\tafter htons: " << htons(port) << endl;
-    server->sin_port = htons(port); // host to network byte order
-    server->sin_addr = { inet_addr(address_string) }; // convert string to network order bytes
-
+    struct sockaddr_in server = {AF_INET, htons(port), inet_addr(address_string)};
     return server;
 }
 
@@ -74,17 +68,12 @@ int main(int argc, char *argv[])
     if (socket_fd < 0)
         return error("Failed to create tcp socket", socket_fd);
     
-//    sockaddr_in *server = create_server(port, address_string);
-    struct sockaddr_in server {AF_INET, htons(port), inet_addr(address_string)};
-
-   // if (server == NULL)
-    //    return error("Server struct was NULL", -1);
+    struct sockaddr_in server = create_server(port, address_string);//
 
     cout << "Attempting to connect socket to " << address_string << endl;
     result = connect(socket_fd, (struct sockaddr *) &server, sizeof(server));
     if (result < 0)
     {
-        //free(server);
         return error("Failed to connect", result);
     }
 
@@ -106,7 +95,6 @@ int main(int argc, char *argv[])
         cout << "Read: " << rcv << endl;     
     }
 
-    //free(server);
     close(socket_fd); 
     return 0;    
 }
