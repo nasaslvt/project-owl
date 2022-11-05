@@ -4,12 +4,30 @@
 
 #include <iostream>
 #include <unistd.h>
+#include <vector>
 #include "tcp.h"
 
 using std::cout;
 using std::endl;
 using std::string;
+using std::vector;
 
+const char FEND = 0xc0; 
+const char DATA = 0x00;
+
+// returns -1 if msg too big to fit in the buffer
+int fill_buffer(char *buffer, unsigned int n, string msg)
+{
+    if (msg.size() + 3 > n)
+        return -1;
+
+    memset(buffer, 0, sizeof(char) * 256);
+    buffer[0] = FEND;
+    buffer[1] = DATA;
+    memcpy(buffer + 2, msg.data(), msg.size());
+    buffer[2 + msg.size()] = FEND;
+    return 3 + msg.size();
+}
 
 int main(int argc, char *argv[])
 {
@@ -32,36 +50,39 @@ int main(int argc, char *argv[])
 
     cout << "Connection succesful." << endl;
 
-    const char *call = "KQ4DIB"; // 6 bytes
-    const char *msg = "NASA SLVT"; // 9 bytes
-    const char FEND = 0xc0; 
-    const char DATA = 0x00;
+    vector<string> messages;
+    messages.push_back("KQ4DIB A1 B2 C3 D4 E5 F6 G7 H8");
+    messages.push_back(" KQ4DIB A1 B2   ");
+    messages.push_back("KQ4DIB   DD F E6 H8   ");
+    messages.push_back("KQ4DIB    `4*&5987   ");
+    messages.push_back("KQ4DIB TE *9 H$ test");
+    messages.push_back("KQ4DIB  A1        H8");
 
-    // 1 byte FEND, 1 byte DATA, 6 byte call, 9 byte msg, 1 byte FEND
-    // total 18 bytes
-    // message looks like following (ASCII chars used instead of hex for message body)
-    // remember, 0x20 is space
-    // 0xc0 0x00 K Q 4 D I B N A S A 0x20 S L V T 0xc0
 
-    char buffer[256];
-    memset(buffer, 0, sizeof(char) * 256);
-
-    buffer[0] = FEND;
-    buffer[1] = DATA;
-    memcpy(buffer + 2, call, 6);
-    memcpy(buffer + 8, msg, 9);
-    buffer[17] = FEND;
+    // 1 byte FEND, 1 byte DATA, call, msg, 1 byte FEND
     
-    for (int i = 0; ; i++)
+    char buffer[256];
+    
+    for (unsigned int i = 0; i < messages.size(); i++)
     {
-        cout << "Attempting to write" << endl;
-        result = write_buffer(socket_fd, buffer, 18);
-        if (result < 0)
+        string message = messages[i];
+        cout << "Enter a character to send message \'" << message << '\'' << endl;
+        char temp;
+        std::cin >> temp;
+
+        int num_write = fill_buffer(buffer, 256, message);
+        if (num_write <= 0)
+        {
+            cout << "ERROR: num_write returned " << num_write << ". Message " << message << " likely could not be packed in buffer." << endl;
+            continue;
+        }
+
+        cout << "Sending message." << endl;
+        result = write_buffer(socket_fd, buffer, num_write);
+        if (result <= 0)
             return error("Failed writing", result); 
-
-        sleep(10);
     }
-
+    sleep(2);
     close(socket_fd); 
     return 0;    
 }
