@@ -1,3 +1,7 @@
+// Author: Peter Costescu
+// NASA SLVT
+// November, 2022
+
 #include <string>
 #include <cstring> // memset
 #include <iostream>

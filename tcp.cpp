@@ -1,3 +1,6 @@
+// Author: Peter Costescu
+// NASA SLVT
+// November, 2022
 #include "tcp.h"
 
 using std::cout;

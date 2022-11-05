@@ -1,3 +1,7 @@
+// Author: Peter Costescu
+// NASA SLVT
+// November, 2022
+
 #include <iostream>
 #include <unistd.h>
 #include "tcp.h"
