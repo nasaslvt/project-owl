@@ -33,3 +33,4 @@
 
 .vscode
 beagle/build/
+schematic/*backups/
