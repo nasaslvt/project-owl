@@ -1,3 +1,0 @@
-(sym_lib_table
-  (lib (name "payload_symbol_library")(type "KiCad")(uri "${KIPRJMOD}/payload_symbol_library.kicad_sym")(options "")(descr ""))
-)
