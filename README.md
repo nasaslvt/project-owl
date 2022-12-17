@@ -1,7 +1,19 @@
 # project-owl
 
+## Repository Structure
+- `beagle`: BeagleBone Black source code
+- `conf`: Configuration files, especially for Dire Wolf
+- `doc`: Documentation, including block diagrams and schematics
+- `esp`: ESP32-CAM source code
+- `kicad`: KiCad project files
+
+## Documentation
+Schematics were created with KiCad and follow the \<version>.\<subversion> naming convention.  
+Block diagrams were created with DigiKey's online "SchemeIt" tool: https://www.digikey.com/schemeit/project/project-owl-26cf1e4f4a01456586e33678977ee045 
+
+
 ## Configuration
-### BeagleBone Black coldstart
+### BeagleBone Black Coldstart
 Download AM3358 Debian 10.3 image from https://beagleboard.org/latest-images. Unzip using 7zip. Flash onto SD card using Rufus.
 Insert SD card into BeagleBone. Hold down BOOT pushbutton (the one near the SD card) and insert power to the board. 
 

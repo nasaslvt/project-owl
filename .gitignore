@@ -33,4 +33,4 @@
 
 .vscode
 beagle/build/
-kicad/*backups/
+kicad/*/*backups/
