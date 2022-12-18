@@ -124,25 +124,7 @@
     "equivalence_files": []
   },
   "erc": {
-    "erc_exclusions": [
-      "lib_symbol_issues|901700|1739900|94e7795e-6745-4c79-972d-5668a3dd730c|00000000-0000-0000-0000-000000000000",
-      "multiple_net_names|469900|241300|e09e49a0-ec2d-495d-b955-d35948554a45|e7c96b8f-7455-48bf-88bb-c3ec6079c6ee",
-      "multiple_net_names|749300|241300|985dc68a-7101-4f65-a4cb-f2466e7e5d2f|13c15d46-854d-4796-b3c0-1ec7eec16d7c",
-      "pin_not_connected|1333500|1257300|ab618c2a-9881-4e75-93d2-650928e5c440|00000000-0000-0000-0000-000000000000",
-      "pin_not_connected|1333500|1485900|e29ade45-f4d9-4f47-9817-d21e67e772eb|00000000-0000-0000-0000-000000000000",
-      "pin_not_connected|533400|1358900|4360d606-b455-4d07-afed-19f5fd8e3574|00000000-0000-0000-0000-000000000000",
-      "pin_not_connected|533400|1384300|4360d606-b455-4d07-afed-19f5fd8e3574|00000000-0000-0000-0000-000000000000",
-      "pin_not_connected|533400|1435100|4360d606-b455-4d07-afed-19f5fd8e3574|00000000-0000-0000-0000-000000000000",
-      "pin_not_connected|533400|1460500|4360d606-b455-4d07-afed-19f5fd8e3574|00000000-0000-0000-0000-000000000000",
-      "power_pin_not_driven|1333500|1155700|cfbfb8d1-e11f-4725-b51a-08372b5aaf3e|00000000-0000-0000-0000-000000000000",
-      "power_pin_not_driven|1333500|1409700|7ec3be3e-6af5-45b3-b4d8-6ac3487c7f11|00000000-0000-0000-0000-000000000000",
-      "power_pin_not_driven|1371600|1689100|a32c3099-8070-4c32-9ca0-f5a7b2545a6a|00000000-0000-0000-0000-000000000000",
-      "power_pin_not_driven|1371600|1689100|bbfff0e8-6a85-4e8b-af64-4532aa4ed572|00000000-0000-0000-0000-000000000000",
-      "power_pin_not_driven|469900|241300|e09e49a0-ec2d-495d-b955-d35948554a45|00000000-0000-0000-0000-000000000000",
-      "power_pin_not_driven|495300|241300|014f2c02-65ee-40f2-ae83-3f58fefaaf8e|00000000-0000-0000-0000-000000000000",
-      "power_pin_not_driven|749300|241300|985dc68a-7101-4f65-a4cb-f2466e7e5d2f|00000000-0000-0000-0000-000000000000",
-      "power_pin_not_driven|749300|901700|02d6e91c-ed8b-49e3-a5e0-da02d7211b72|00000000-0000-0000-0000-000000000000"
-    ],
+    "erc_exclusions": [],
     "meta": {
       "version": 0
     },
@@ -329,7 +311,7 @@
       "extra_units": "error",
       "global_label_dangling": "warning",
       "hier_label_mismatch": "error",
-      "label_dangling": "ignore",
+      "label_dangling": "error",
       "lib_symbol_issues": "warning",
       "multiple_net_names": "warning",
       "net_not_bus_member": "warning",
@@ -351,7 +333,7 @@
     "pinned_symbol_libs": []
   },
   "meta": {
-    "filename": "cape.kicad_pro",
+    "filename": "test.kicad_pro",
     "version": 1
   },
   "net_settings": {
@@ -430,7 +412,7 @@
   },
   "sheets": [
     [
-      "e63e39d7-6ac0-4ffd-8aa3-1841a4541b55",
+      "1f619122-e2f2-4721-b16c-86348e732b7d",
       ""
     ]
   ],
