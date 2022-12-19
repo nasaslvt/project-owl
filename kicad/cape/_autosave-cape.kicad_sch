@@ -2927,7 +2927,7 @@
     (uuid ecf7c526-1bd5-49c8-a82a-8acc85e22ee0)
     (property "Reference" "U1" (id 0) (at 66.04 124.46 0))
     (property "Value" "L298" (id 1) (at 66.04 127 0))
-    (property "Footprint" "Connector_PinSocket_2.54mm:PinSocket_1x06_P2.54mm_Vertical" (id 2) (at 55.88 129.54 0)
+    (property "Footprint" "Connector_PinHeader_2.54mm:PinHeader_1x06_P2.54mm_Vertical" (id 2) (at 55.88 129.54 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "" (id 3) (at 55.88 129.54 0)
@@ -3064,7 +3064,7 @@
       (reference "SW1") (unit 1) (value "L101011_SPST") (footprint "payload_footprint_library:SPST")
     )
     (path "/ecf7c526-1bd5-49c8-a82a-8acc85e22ee0"
-      (reference "U1") (unit 1) (value "L298") (footprint "Connector_PinSocket_2.54mm:PinSocket_1x06_P2.54mm_Vertical")
+      (reference "U1") (unit 1) (value "L298") (footprint "Connector_PinHeader_2.54mm:PinHeader_1x06_P2.54mm_Vertical")
     )
     (path "/ae4a70ec-7099-49d5-8f39-6daa3b0242a8"
       (reference "U2") (unit 1) (value "BNO055") (footprint "payload_footprint_library:BNO055")
