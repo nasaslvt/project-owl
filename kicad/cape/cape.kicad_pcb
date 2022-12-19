@@ -5,6 +5,12 @@
   )
 
   (paper "A4")
+  (title_block
+    (title "Payload BeagleBone Black Cape")
+    (date "2022-12-18")
+    (rev "1.1")
+  )
+
   (layers
     (0 "F.Cu" signal)
     (31 "B.Cu" signal)
@@ -33,7 +39,7 @@
     (aux_axis_origin 100 100)
     (grid_origin 100 100)
     (pcbplotparams
-      (layerselection 0x0001030_80000001)
+      (layerselection 0x0001030_ffffffff)
       (disableapertmacros false)
       (usegerberextensions false)
       (usegerberattributes true)
@@ -59,11 +65,11 @@
       (plotinvisibletext false)
       (sketchpadsonfab false)
       (subtractmaskfromsilk false)
-      (outputformat 4)
+      (outputformat 1)
       (mirror false)
       (drillshape 0)
       (scaleselection 1)
-      (outputdirectory "")
+      (outputdirectory "Drill/")
     )
   )
 
