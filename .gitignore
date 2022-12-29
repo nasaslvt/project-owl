@@ -34,3 +34,4 @@
 .vscode
 beagle/build/
 kicad/*/*backups/
+kicad/*/#auto_saved_files#
