@@ -385,8 +385,8 @@
       "idf": "",
       "netlist": "",
       "specctra_dsn": "",
-      "step": "",
-      "vrml": ""
+      "step": "cape.step",
+      "vrml": "cape.wrl"
     },
     "page_layout_descr_file": ""
   },
