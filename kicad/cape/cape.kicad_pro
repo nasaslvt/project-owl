@@ -380,7 +380,7 @@
       "idf": "",
       "netlist": "",
       "specctra_dsn": "",
-      "step": "cape.step",
+      "step": "../../doc/cape_v1-3.step",
       "vrml": "cape.wrl"
     },
     "page_layout_descr_file": ""

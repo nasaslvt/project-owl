@@ -718,7 +718,7 @@
       (net 88 "Net-(BT1-Pad1)") (pinfunction "A") (pintype "passive") (tstamp 6c83665e-e093-4857-84bf-64d72d380727))
     (pad "2" thru_hole circle (at 0 -2.85 180) (size 2.48 2.48) (drill 1.65) (layers *.Cu *.Mask)
       (net 82 "/+7.4V") (pinfunction "B") (pintype "passive") (tstamp fdb7bca6-5fa8-424d-8950-3f97351432cf))
-    (model "${PAYLOAD_KICAD}/L101011MS02Q.step"
+    (model "${PAYLOAD_KICAD_3DMODEL}/L101011MS02Q.step"
       (offset (xyz 0 0 0))
       (scale (xyz 1 1 1))
       (rotate (xyz -90 0 0))
