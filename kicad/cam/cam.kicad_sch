@@ -775,7 +775,7 @@
     (in_bom yes) (on_board yes) (fields_autoplaced)
     (uuid 70068c15-41a7-4281-88d5-2d9751a9bcef)
     (property "Reference" "U1" (id 0) (at 80.01 21.59 0))
-    (property "Value" "S13V10FS" (id 1) (at 80.01 24.13 0))
+    (property "Value" "S13V10F5" (id 1) (at 80.01 24.13 0))
     (property "Footprint" "" (id 2) (at 87.63 26.67 0)
       (effects (font (size 1.27 1.27)) hide)
     )
@@ -888,7 +888,7 @@
       (reference "SW1") (unit 1) (value "L101011_SPST") (footprint "")
     )
     (path "/70068c15-41a7-4281-88d5-2d9751a9bcef"
-      (reference "U1") (unit 1) (value "S13V10FS") (footprint "")
+      (reference "U1") (unit 1) (value "S13V10F5") (footprint "")
     )
     (path "/8be02d02-d42c-4113-9745-fb4efcc193ff"
       (reference "U2") (unit 1) (value "ESP32-CAM") (footprint "")
