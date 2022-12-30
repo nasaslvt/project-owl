@@ -56,3 +56,6 @@ We are using **145.70 MHz** as our test frequency, although APRS for North Ameri
 ## Debugging
 The user running Dire Wolf must be a member of the `audio` group.
 
+## Licensing
+The KiCad footprint and model for the L101011MS02Q were provided by SnapEDA under the CC-BY-SA 4.0 license: https://www.snapeda.com/parts/L101011MS02Q/C&K/view-part/?ref=digikey 
+
