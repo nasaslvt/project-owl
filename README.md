@@ -16,7 +16,18 @@ Block diagrams were created with DigiKey's online [SchemeIt tool](https://www.di
 
 ## Configuration
 ### BeagleBone Black Coldstart
-Download the AM3358 Debian 10.3 image from the BeagleBoard website. Unzip the image file using 7zip. Insert the SD card into a computer and use the Rufus software to flash the image onto the SD card. Insert the SD card into the BeagleBone and hold down the BOOT pushbutton (located near the SD card slot) while connecting the power supply to the board.
+
+#### Flashing Firmware
+
+* Use the Rufus software to flash the [Debian 10.3 2020-04-06 4GB eMMC IoT Flasher image](https://debian.beagleboard.org/images/bone-eMMC-flasher-debian-10.3-iot-armhf-2020-04-06-4gb.img.xz) onto the SD card. 
+* Insert the SD card into the BeagleBone and hold down the "User Boot" button (located near the SD card slot). 
+* Connect the power source (USB or 5V adaptor) while holding down the "User Boot" button.
+* Release the button once the bank of 4 LED's light up for a few seconds.
+* The flashing process will take approximately 30-45 minutes. 
+* Once the flashing is complete, the bank of 4 LED's to the right of the Ethernet will turn off. 
+* Power down the BeagleBone Black, remove the SD card, and power up the BeagleBone Black. 
+
+#### Setup
 
 Configure passwords and users
 ```bash
@@ -49,7 +60,7 @@ Copy `receive.conf` from this repository to `~/conf/receive.conf`
 
 ## Operation
 ### Using rtl_fm
-Reference guide: http://kmkeen.com/rtl-demod-guide/
+[Reference guide](http://kmkeen.com/rtl-demod-guide/).
 To listen to FM radio: `rtl_fm -M wbfm -f 90.7M | sox -r 32k -t raw -e s -b 16 -c 1 -V1 - test.wav`
 To use rtl_fm and Dire Wolf: `rtl_fm  -f 145.70M - | direwolf -c receive.conf` or run `receive.sh`.
 We are using **145.70 MHz** as our test frequency, although APRS for North America is 144.39M. 
