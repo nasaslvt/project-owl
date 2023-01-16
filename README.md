@@ -8,14 +8,15 @@
 - `kicad`: KiCad project files
 
 ## Documentation
-Schematics were created with KiCad and follow the \<version>.\<subversion> naming convention.  
-Block diagrams were created with DigiKey's online "SchemeIt" tool: https://www.digikey.com/schemeit/project/project-owl-26cf1e4f4a01456586e33678977ee045 
 
+The BeagleBone Black Wireless is running the [Debian 10.3 2020-04-06 4GB eMMC IoT firmware](https://debian.beagleboard.org/images/bone-eMMC-flasher-debian-10.3-iot-armhf-2020-04-06-4gb.img.xz). This firmware is a Debian Buster IoT (without graphical desktop) image specifically designed for flashing the on-board eMMC memory of the BeagleBone via a microSD card.
+
+Schematics were created with KiCad and follow the \<version>.\<subversion> naming convention.  
+Block diagrams were created with DigiKey's online [SchemeIt tool](https://www.digikey.com/schemeit/project/project-owl-26cf1e4f4a01456586e33678977ee045).
 
 ## Configuration
 ### BeagleBone Black Coldstart
-Download AM3358 Debian 10.3 image from https://beagleboard.org/latest-images. Unzip using 7zip. Flash onto SD card using Rufus.
-Insert SD card into BeagleBone. Hold down BOOT pushbutton (the one near the SD card) and insert power to the board. 
+Download the AM3358 Debian 10.3 image from the BeagleBoard website. Unzip the image file using 7zip. Insert the SD card into a computer and use the Rufus software to flash the image onto the SD card. Insert the SD card into the BeagleBone and hold down the BOOT pushbutton (located near the SD card slot) while connecting the power supply to the board.
 
 Configure passwords and users
 ```bash
