@@ -9,13 +9,15 @@
 
 ## Documentation
 
-The BeagleBone Black Wireless is running the [Debian 10.3 2020-04-06 4GB eMMC IoT firmware](https://debian.beagleboard.org/images/bone-eMMC-flasher-debian-10.3-iot-armhf-2020-04-06-4gb.img.xz). This firmware is a Debian Buster IoT (without graphical desktop) image specifically designed for flashing the on-board eMMC memory of the BeagleBone via a microSD card.
+The BeagleBone Black Wireless (BBB) is running the [Debian 10.3 2020-04-06 4GB eMMC IoT firmware](https://debian.beagleboard.org/images/bone-eMMC-flasher-debian-10.3-iot-armhf-2020-04-06-4gb.img.xz). This firmware is a Debian Buster IoT (without graphical desktop) image specifically designed for flashing the on-board eMMC memory of the BeagleBone via a microSD card.
+
+The BBB is hosting a wireless access point with the SSID "owl". The network has a DHCP range of 192.168.8.50 to 192.168.8.150 and a listen address of 192.168.8.1. The ESP32-Cam is configured to connect to this network on startup with a static ip address of 192.168.8.10.
 
 Schematics were created with KiCad and follow the \<version>.\<subversion> naming convention.  
 Block diagrams were created with DigiKey's online [SchemeIt tool](https://www.digikey.com/schemeit/project/project-owl-26cf1e4f4a01456586e33678977ee045).
 
 ## Configuration
-### BeagleBone Black Coldstart
+### BeagleBone Black Wireless
 
 #### Flashing Firmware
 
@@ -29,12 +31,26 @@ Block diagrams were created with DigiKey's online [SchemeIt tool](https://www.di
 
 #### Setup
 
-Configure passwords and users
+* To connect to the BeagleBone via USB, use the following command:
 ```bash
-su - 
+ssh debian@192.168.7.1 or ssh debian@192.168.6.1
+```
+* When prompted, enter the password `temppwd`.
+
+* Configure users and passwords
+```bash
+sudo su
 passwd
 adduser slvt
 usermod -aG sudo slvt
+```
+
+* Setup Wireless Access Point
+```bash
+sudo sed -i -e 's:USE_PERSONAL_SSID="BeagleBone":USE_PERSONAL_SSID="owl":g' /etc/default/bb-wl18xx
+sudo sed -i -e 's:USE_PERSONAL_PASSWORD="BeagleBone":USE_PERSONAL_PASSWORD="str1g1f0rm35":g' /etc/default/bb-wl18xx
+sudo sed -i -e 's:USE_APPENDED_SSID=yes:USE_APPENDED_SSID=no:g' /etc/default/bb-wl18xx
+sudo reboot now
 ```
 
 Install rtl_test, rtl_fm, etc.
@@ -57,6 +73,12 @@ exit
 ```
 
 Copy `receive.conf` from this repository to `~/conf/receive.conf`
+
+### ESP32-Camera
+
+#### Flashing
+
+todo
 
 ## Operation
 ### Using rtl_fm

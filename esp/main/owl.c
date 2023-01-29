@@ -15,8 +15,13 @@
 #include <sdmmc_cmd.h>
 #include <esp_vfs_fat.h>
 
-#define WIFI_SSID "BeagleBone-D587"
-#define WIFI_PASS "BeagleBone"
+#define WIFI_SSID "owl"
+#define WIFI_PASS "str1g1f0rm35"
+
+#define WIFI_STATIC_IP_ADDR "192.168.8.10"
+#define WIFI_STATIC_NETMASK_ADDR "255.255.255.0"
+#define WIFI_STATIC_GW_ADDR "192.168.8.1"
+
 
 #define CAM_PIN_PWDN 32
 #define CAM_PIN_RESET -1 //software reset will be performed
@@ -118,7 +123,7 @@ static size_t jpg_encode_stream(void * arg, size_t index, const void* data, size
     return len;
 }
 
-esp_err_t jpg_httpd_handler(httpd_req_t *req){
+esp_err_t jpg_httpd_handler(httpd_req_t *req) {
     camera_fb_t * fb = NULL;
     esp_err_t res = ESP_OK;
     size_t fb_len = 0;
@@ -261,12 +266,32 @@ static void connect_handler(void* arg, esp_event_base_t event_base,
     }
 }
 
+static void set_static_ip(esp_netif_t *netif)
+{
+    if (esp_netif_dhcpc_stop(netif) != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to stop dhcp client");
+        return;
+    }
+    esp_netif_ip_info_t ip;
+    memset(&ip, 0 , sizeof(esp_netif_ip_info_t));
+    ip.ip.addr = ipaddr_addr(WIFI_STATIC_IP_ADDR);
+    ip.netmask.addr = ipaddr_addr(WIFI_STATIC_NETMASK_ADDR);
+    ip.gw.addr = ipaddr_addr(WIFI_STATIC_GW_ADDR);
+    if (esp_netif_set_ip_info(netif, &ip) != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to set ip info");
+        return;
+    }
+    ESP_LOGD(TAG, "Success to set static ip: %s, netmask: %s, gw: %s", WIFI_STATIC_IP_ADDR, WIFI_STATIC_NETMASK_ADDR, WIFI_STATIC_GW_ADDR);
+}
+
 static void event_handler(void* arg, esp_event_base_t event_base,
                                 int32_t event_id, void* event_data)
 {
     if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
         esp_err_t err = esp_wifi_connect();
         ESP_LOGI(TAG, "%s", esp_err_to_name(err));
+    } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_CONNECTED) {
+        set_static_ip(arg);
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
          esp_err_t err = esp_wifi_connect();
          ESP_LOGI(TAG, "%s", esp_err_to_name(err));
@@ -290,12 +315,12 @@ static void init_wifi() {
     ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT,
                                                         ESP_EVENT_ANY_ID,
                                                         &event_handler,
-                                                        NULL,
+                                                        sta_netif,
                                                         &instance_any_id));
     ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT,
                                                         IP_EVENT_STA_GOT_IP,
                                                         &event_handler,
-                                                        NULL,
+                                                        sta_netif,
                                                         &instance_got_ip));
 
     wifi_config_t wifi_config = {
