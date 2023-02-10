@@ -1,3 +1,4 @@
 (sym_lib_table
-  (lib (name "payload_symbol_library")(type "KiCad")(uri "C:/Users/peter/source/repos/project-owl/kicad/payload_symbol_library.kicad_sym")(options "")(descr ""))
+  (lib (name "payload_symbol_library")(type "KiCad")(uri "${KIPRJMOD}/../payload_symbol_library.kicad_sym")(options "")(descr ""))
+  (lib (name "payload_logo")(type "KiCad")(uri "C:/Users/Peter.LAPTOP-4D2FB13J/source/repos/project-owl/kicad/payload_logo.kicad_sym")(options "")(descr ""))
 )
