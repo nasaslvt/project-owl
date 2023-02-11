@@ -9,6 +9,7 @@
 #include <esp_camera.h>
 #include <esp_timer.h>
 #include <string.h>
+#include <dirent.h>
 
 #include <driver/sdmmc_host.h>
 #include <driver/sdmmc_defs.h>
@@ -21,7 +22,6 @@
 #define WIFI_STATIC_IP_ADDR "192.168.8.10"
 #define WIFI_STATIC_NETMASK_ADDR "255.255.255.0"
 #define WIFI_STATIC_GW_ADDR "192.168.8.1"
-
 
 #define CAM_PIN_PWDN 32
 #define CAM_PIN_RESET -1 //software reset will be performed
@@ -74,8 +74,8 @@ static camera_config_t camera_config = {
     .pixel_format = PIXFORMAT_JPEG,
     .frame_size = FRAMESIZE_FHD,
 
-    .jpeg_quality = 12,
-    .fb_count = 1,
+    .jpeg_quality = 10,
+    .fb_count = 2,
     .fb_location = CAMERA_FB_IN_PSRAM,
     .grab_mode = CAMERA_GRAB_LATEST
 };
@@ -119,7 +119,7 @@ static esp_err_t stream_handler(httpd_req_t *req)
 {
 
     sensor_t * s = esp_camera_sensor_get();
-    s->set_framesize(s, FRAMESIZE_QSXGA);
+    s->set_framesize(s, FRAMESIZE_SVGA);
 
     camera_fb_t *fb = NULL;
     struct timeval _timestamp;
@@ -227,8 +227,7 @@ static esp_err_t parse_get(httpd_req_t *req, char **obuf)
         }
         free(buf);
     }
-    httpd_resp_send_404(req);
-    return ESP_FAIL;
+    return ESP_OK;
 }
 
 esp_err_t capture_handler(httpd_req_t *req) {
@@ -257,7 +256,7 @@ esp_err_t capture_handler(httpd_req_t *req) {
         s->set_special_effect(s, 2);
     }
     if (strcmp(value, "edge")) {
-        s->set_special_effect(s, 1);
+        s->set_special_effect(s, 6);
     }
 
     free(buf);
@@ -308,6 +307,123 @@ esp_err_t capture_handler(httpd_req_t *req) {
     return res;
 }
 
+esp_err_t file_handler(httpd_req_t *req) {
+
+    char *buf = NULL;
+    char value[32];
+
+    if (parse_get(req, &buf) != ESP_OK) {
+        return ESP_FAIL;
+    }
+
+    esp_err_t err = httpd_query_key_value(buf, "fname", value, sizeof(value));
+
+    free(buf);
+
+    if (err == ESP_ERR_NOT_FOUND) {
+        return ESP_OK;
+    }
+
+    char *pic_name = malloc(13 + sizeof(value));
+    sprintf(pic_name, "/sdcard/%s.jpg", value);
+
+    FILE *file = fopen(pic_name, "r");
+    if (file != NULL)
+    {
+        ESP_LOGI(TAG, "File opened");
+    }
+    else
+    {
+        ESP_LOGE(TAG, "Could not open file %s", pic_name);
+        httpd_resp_send_500(req);
+        return ESP_FAIL;
+    }
+
+    fseek(file, 0, SEEK_END);
+    int size = ftell(file);
+    fseek(file, 0, SEEK_SET);
+
+    char *buffer = malloc(size);
+    fread(buffer, 1, size, file);
+    fclose(file);
+    free(pic_name);
+
+    httpd_resp_set_type(req, "image/jpeg");
+    httpd_resp_send(req, buffer, size);
+    free(buffer);
+
+    return ESP_OK;
+}
+
+esp_err_t list_handler(httpd_req_t *req) {
+
+    char *buf = NULL;
+    char value[32];
+
+    if (parse_get(req, &buf) != ESP_OK) {
+        return ESP_FAIL;
+    }
+
+    esp_err_t err = httpd_query_key_value(buf, "action", value, sizeof(value));
+
+    free(buf);
+
+    if (err == ESP_ERR_NOT_FOUND) {
+        return ESP_OK;
+    }
+
+    if (strcmp(value, "list") == 0) {
+        DIR *dir;
+        struct dirent *ent;
+        char *html_buffer = malloc(1024);
+        char *html_buffer_ptr = html_buffer;
+
+        if ((dir = opendir("/sdcard")) != NULL) {
+            while ((ent = readdir(dir)) != NULL) {
+                if (ent->d_type == DT_REG) {
+                    html_buffer_ptr += sprintf(html_buffer_ptr, "<p>%s</p>", ent->d_name);
+                }
+            }
+            closedir(dir);
+        }
+
+        httpd_resp_set_type(req, "text/html");
+        httpd_resp_send(req, html_buffer, strlen(html_buffer));
+        free(html_buffer);
+    }
+    else if (strcmp(value, "delete") == 0) {
+        char *file_name = malloc(32);
+        err = httpd_query_key_value(buf, "fname", file_name, 32);
+        if (err == ESP_OK) {
+            char *file_path = malloc(13 + strlen(file_name));
+            sprintf(file_path, "/sdcard/%s.jpg", file_name);
+            if (remove(file_path) == 0) {
+                httpd_resp_sendstr(req, "File deleted successfully");
+            }
+            else {
+                httpd_resp_send_500(req);
+            }
+            free(file_path);
+        }
+        else {
+            httpd_resp_send_500(req);
+        }
+        free(file_name);
+    }
+    else {
+        httpd_resp_send_500(req);
+    }
+
+    return ESP_OK;
+}
+
+static const httpd_uri_t list = {
+    .uri       = "/list",
+    .method    = HTTP_GET,
+    .handler   = list_handler,
+    .user_ctx  = NULL
+};
+
 static const httpd_uri_t capture = {
     .uri       = "/capture",
     .method    = HTTP_GET,
@@ -319,6 +435,13 @@ static const httpd_uri_t stream = {
     .uri       = "/stream",
     .method    = HTTP_GET,
     .handler   = stream_handler,
+    .user_ctx  = NULL
+};
+
+static const httpd_uri_t file = {
+    .uri       = "/file",
+    .method    = HTTP_GET,
+    .handler   = file_handler,
     .user_ctx  = NULL
 };
 
@@ -334,8 +457,10 @@ static httpd_handle_t start_webserver(void)
     if (res == ESP_OK) {
         // Set URI handlers
         ESP_LOGI(TAG, "Registering URI handlers");
+        httpd_register_uri_handler(server, &list);
         httpd_register_uri_handler(server, &capture);
         httpd_register_uri_handler(server, &stream);
+        httpd_register_uri_handler(server, &file);
         return server;
     }
     ESP_LOGI(TAG, "Error starting server: %s", esp_err_to_name(res));
@@ -397,7 +522,7 @@ static void event_handler(void* arg, esp_event_base_t event_base,
         esp_err_t err = esp_wifi_connect();
         ESP_LOGI(TAG, "%s", esp_err_to_name(err));
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_CONNECTED) {
-        set_static_ip(arg);
+        //set_static_ip(arg);
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
          esp_err_t err = esp_wifi_connect();
          ESP_LOGI(TAG, "%s", esp_err_to_name(err));
