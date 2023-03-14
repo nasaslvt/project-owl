@@ -14,8 +14,14 @@
 #define PRU0_DRAM  0x00000
 #define PRU1_DRAM  0x02000
 
-#define DCMIN 2.9
-#define DCMAX 97.1
+#define MAXSPEED 30
+
+#define DCMIN 3
+#define DCMAX 95.7
+
+#define Kp 0.3
+#define Ki 0.001
+#define Kd 10
 
 int init_servo(struct servo *servo) {
     BBIO_err err;
@@ -66,10 +72,6 @@ void servo_zero(struct servo *servo) {
     printf("Servo Zero: %f\n", servo->zero);
 }
 
-#define Kp 0.1
-#define Ki 0.001
-#define Kd 0.0001
-
 void servo_rotate(struct servo *servo, double value) {
     double error = 1, integral, derivative, prev_error, output;
     while (1) {
@@ -98,8 +100,8 @@ void servo_rotate(struct servo *servo, double value) {
 
 void servo_set_speed(struct servo *servo, double speed) {
 
-    if (speed > 140) speed = 140;
-    if (speed < -140) speed = -140;
+    if (speed > MAXSPEED) speed = MAXSPEED;
+    if (speed < -MAXSPEED) speed = -MAXSPEED;
 
     if (speed == 0.0) {
         pwm_set_duty_cycle(servo->ctrl_pin, 7.5);
