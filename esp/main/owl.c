@@ -10,6 +10,7 @@
 #include <esp_timer.h>
 #include <string.h>
 #include <dirent.h>
+#include<unistd.h>
 
 #include <driver/sdmmc_host.h>
 #include <driver/sdmmc_defs.h>
@@ -42,9 +43,9 @@
 #define CAM_PIN_PCLK 22
 
 #define PART_BOUNDARY "123456789000000000000987654321"
-static const char *_STREAM_CONTENT_TYPE = "multipart/x-mixed-replace;boundary=" PART_BOUNDARY;
-static const char *_STREAM_BOUNDARY = "\r\n--" PART_BOUNDARY "\r\n";
-static const char *_STREAM_PART = "Content-Type: image/jpeg\r\nContent-Length: %u\r\nX-Timestamp: %d.%06d\r\n\r\n";
+static const char* _STREAM_CONTENT_TYPE = "multipart/x-mixed-replace;boundary=" PART_BOUNDARY;
+static const char* _STREAM_BOUNDARY = "\r\n--" PART_BOUNDARY "\r\n";
+static const char* _STREAM_PART = "Content-Type: image/jpeg\r\nContent-Length: %u\r\n\r\n";
 
 static const char *TAG = "owl";
 
@@ -67,12 +68,12 @@ static camera_config_t camera_config = {
     .pin_href = CAM_PIN_HREF,
     .pin_pclk = CAM_PIN_PCLK,
 
-    .xclk_freq_hz = 20000000,
+    .xclk_freq_hz = 10000000,
     .ledc_timer = LEDC_TIMER_0,
     .ledc_channel = LEDC_CHANNEL_0,
 
     .pixel_format = PIXFORMAT_JPEG,
-    .frame_size = FRAMESIZE_FHD,
+    .frame_size = FRAMESIZE_QSXGA,
 
     .jpeg_quality = 10,
     .fb_count = 2,
@@ -115,100 +116,6 @@ static esp_err_t init_sdcard()
     return ESP_OK;
 }
 
-static esp_err_t stream_handler(httpd_req_t *req)
-{
-
-    sensor_t * s = esp_camera_sensor_get();
-    s->set_framesize(s, FRAMESIZE_SVGA);
-
-    camera_fb_t *fb = NULL;
-    struct timeval _timestamp;
-    esp_err_t res = ESP_OK;
-    size_t _jpg_buf_len = 0;
-    uint8_t *_jpg_buf = NULL;
-    char *part_buf[128];
-
-    static int64_t last_frame = 0;
-    if (!last_frame)
-    {
-        last_frame = esp_timer_get_time();
-    }
-
-    res = httpd_resp_set_type(req, _STREAM_CONTENT_TYPE);
-    if (res != ESP_OK)
-    {
-        return res;
-    }
-
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
-    httpd_resp_set_hdr(req, "X-Framerate", "60");
-
-    while (true)
-    {
-        fb = esp_camera_fb_get();
-        if (!fb)
-        {
-            ESP_LOGE(TAG, "Camera capture failed");
-            res = ESP_FAIL;
-        }
-        else
-        {
-            _timestamp.tv_sec = fb->timestamp.tv_sec;
-            _timestamp.tv_usec = fb->timestamp.tv_usec;
-                if (fb->format != PIXFORMAT_JPEG)
-                {
-                    bool jpeg_converted = frame2jpg(fb, 80, &_jpg_buf, &_jpg_buf_len);
-                    esp_camera_fb_return(fb);
-                    fb = NULL;
-                    if (!jpeg_converted)
-                    {
-                        ESP_LOGE(TAG, "JPEG compression failed");
-                        res = ESP_FAIL;
-                    }
-                }
-                else
-                {
-                    _jpg_buf_len = fb->len;
-                    _jpg_buf = fb->buf;
-                }
-        }
-        if (res == ESP_OK)
-        {
-            res = httpd_resp_send_chunk(req, _STREAM_BOUNDARY, strlen(_STREAM_BOUNDARY));
-        }
-        if (res == ESP_OK)
-        {
-            size_t hlen = snprintf((char *)part_buf, 128, _STREAM_PART, _jpg_buf_len, _timestamp.tv_sec, _timestamp.tv_usec);
-            res = httpd_resp_send_chunk(req, (const char *)part_buf, hlen);
-        }
-        if (res == ESP_OK)
-        {
-            res = httpd_resp_send_chunk(req, (const char *)_jpg_buf, _jpg_buf_len);
-        }
-        if (fb)
-        {
-            esp_camera_fb_return(fb);
-            fb = NULL;
-            _jpg_buf = NULL;
-        }
-        else if (_jpg_buf)
-        {
-            free(_jpg_buf);
-            _jpg_buf = NULL;
-        }
-        if (res != ESP_OK)
-        {
-            ESP_LOGE(TAG, "Send frame failed");
-            break;
-        }
-        int64_t fr_end = esp_timer_get_time();
-        int64_t frame_time = fr_end - last_frame;
-        frame_time /= 1000;
-    }
-    
-    return res;
-}
-
 static esp_err_t parse_get(httpd_req_t *req, char **obuf)
 {
     char *buf = NULL;
@@ -229,14 +136,14 @@ static esp_err_t parse_get(httpd_req_t *req, char **obuf)
     }
     return ESP_OK;
 }
-
+/*
 esp_err_t capture_handler(httpd_req_t *req) {
 
     char *buf = NULL;
     char vflip[1];
     char value[32];
 
-    sensor_t * s = esp_camera_sensor_get();
+    sensor_t *s = esp_camera_sensor_get();
 
     if (parse_get(req, &buf) != ESP_OK) {
         return ESP_FAIL;
@@ -416,40 +323,143 @@ esp_err_t list_handler(httpd_req_t *req) {
 
     return ESP_OK;
 }
+*/
 
-static const httpd_uri_t list = {
-    .uri       = "/list",
+esp_err_t camera_get_handler(httpd_req_t *req) {
+    
+    sensor_t * s = esp_camera_sensor_get();
+    camera_sensor_info_t * info = esp_camera_sensor_get_info(&s->id);
+
+    char json_response[256];
+    sprintf(json_response, "{\n\t\"name\": \"%s\"\n}", info->name);
+
+    httpd_resp_send(req, json_response, strlen(json_response));
+    return ESP_OK;
+}
+
+static const httpd_uri_t camera_get_uri = {
+    .uri       = "/",
     .method    = HTTP_GET,
-    .handler   = list_handler,
+    .handler   = camera_get_handler,
     .user_ctx  = NULL
 };
 
-static const httpd_uri_t capture = {
-    .uri       = "/capture",
-    .method    = HTTP_GET,
-    .handler   = capture_handler,
-    .user_ctx  = NULL
-};
+esp_err_t camera_stream_get_handler(httpd_req_t *req)
+{
+    sensor_t * s = esp_camera_sensor_get();
+    s->set_framesize(s, FRAMESIZE_HD);
 
-static const httpd_uri_t stream = {
+    camera_fb_t * fb = NULL;
+    esp_err_t res = ESP_OK;
+    size_t _jpg_buf_len;
+    uint8_t * _jpg_buf;
+    char * part_buf[64];
+    static int64_t last_frame = 0;
+    if(!last_frame) {
+        last_frame = esp_timer_get_time();
+    }
+
+    res = httpd_resp_set_type(req, _STREAM_CONTENT_TYPE);
+    if(res != ESP_OK){
+        return res;
+    }
+
+    while(true){
+        fb = esp_camera_fb_get();
+        if (!fb) {
+            ESP_LOGE(TAG, "Camera capture failed");
+            res = ESP_FAIL;
+            break;
+        }
+        if(fb->format != PIXFORMAT_JPEG){
+            bool jpeg_converted = frame2jpg(fb, 80, &_jpg_buf, &_jpg_buf_len);
+            if(!jpeg_converted){
+                ESP_LOGE(TAG, "JPEG compression failed");
+                esp_camera_fb_return(fb);
+                res = ESP_FAIL;
+            }
+        } else {
+            _jpg_buf_len = fb->len;
+            _jpg_buf = fb->buf;
+        }
+
+        if(res == ESP_OK){
+            res = httpd_resp_send_chunk(req, _STREAM_BOUNDARY, strlen(_STREAM_BOUNDARY));
+        }
+        if(res == ESP_OK){
+            size_t hlen = snprintf((char *)part_buf, 64, _STREAM_PART, _jpg_buf_len);
+
+            res = httpd_resp_send_chunk(req, (const char *)part_buf, hlen);
+        }
+        if(res == ESP_OK){
+            res = httpd_resp_send_chunk(req, (const char *)_jpg_buf, _jpg_buf_len);
+        }
+        if(fb->format != PIXFORMAT_JPEG){
+            free(_jpg_buf);
+        }
+        esp_camera_fb_return(fb);
+        if(res != ESP_OK){
+            break;
+        }
+        int64_t fr_end = esp_timer_get_time();
+        int64_t frame_time = fr_end - last_frame;
+        last_frame = fr_end;
+        frame_time /= 1000;
+        ESP_LOGI(TAG, "MJPG: %uKB %ums (%.1ffps)",
+            (uint32_t)(_jpg_buf_len/1024),
+            (uint32_t)frame_time, 1000.0 / (uint32_t)frame_time);
+    }
+
+    last_frame = 0;
+    return res;
+}
+
+static const httpd_uri_t camera_stream_get_uri = {
     .uri       = "/stream",
     .method    = HTTP_GET,
-    .handler   = stream_handler,
+    .handler   = camera_stream_get_handler,
     .user_ctx  = NULL
 };
 
-static const httpd_uri_t file = {
-    .uri       = "/file",
+esp_err_t camera_record_get_handler(httpd_req_t *req)
+{
+    sensor_t * s = esp_camera_sensor_get();
+    s->set_framesize(s, FRAMESIZE_SVGA);
+
+    camera_fb_t * fb = NULL;
+    esp_err_t res = ESP_OK;
+    int64_t fr_start;
+
+    char *vid_name = malloc(17 + sizeof(int64_t));
+    sprintf(vid_name, "/sdcard/vid_%lli.jpg", esp_timer_get_time());
+    FILE *file = fopen(vid_name, "w");
+
+    while(true) {
+        fb = esp_camera_fb_get();
+        if (fb) {
+            fr_start = esp_timer_get_time();
+            fwrite(fb->buf, 1, fb->len, file);
+            esp_camera_fb_return(fb);
+            ESP_LOGI(TAG, "JPG: %zuKB %ums", fb->len/1024, (uint32_t)((esp_timer_get_time() - fr_start)/1000));
+        }
+    }
+    free(vid_name);
+    fclose(file);
+}
+
+static const httpd_uri_t camera_record_get_uri = {
+    .uri       = "/record",
     .method    = HTTP_GET,
-    .handler   = file_handler,
+    .handler   = camera_record_get_handler,
     .user_ctx  = NULL
 };
+
 
 static httpd_handle_t start_webserver(void)
 {
     httpd_handle_t server = NULL;
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
-    config.lru_purge_enable = true;
+    config.server_port = 8080;
 
     // Start the httpd server
     ESP_LOGI(TAG, "Starting server on port: '%d'", config.server_port);
@@ -457,10 +467,9 @@ static httpd_handle_t start_webserver(void)
     if (res == ESP_OK) {
         // Set URI handlers
         ESP_LOGI(TAG, "Registering URI handlers");
-        httpd_register_uri_handler(server, &list);
-        httpd_register_uri_handler(server, &capture);
-        httpd_register_uri_handler(server, &stream);
-        httpd_register_uri_handler(server, &file);
+        httpd_register_uri_handler(server, &camera_get_uri);
+        httpd_register_uri_handler(server, &camera_record_get_uri);
+        httpd_register_uri_handler(server, &camera_stream_get_uri);
         return server;
     }
     ESP_LOGI(TAG, "Error starting server: %s", esp_err_to_name(res));
@@ -515,19 +524,24 @@ static void set_static_ip(esp_netif_t *netif)
     ESP_LOGD(TAG, "Success to set static ip: %s, netmask: %s, gw: %s", WIFI_STATIC_IP_ADDR, WIFI_STATIC_NETMASK_ADDR, WIFI_STATIC_GW_ADDR);
 }
 
-static void event_handler(void* arg, esp_event_base_t event_base,
+static void wifi_event_handler(void* arg, esp_event_base_t event_base,
                                 int32_t event_id, void* event_data)
 {
-    if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
-        esp_err_t err = esp_wifi_connect();
-        ESP_LOGI(TAG, "%s", esp_err_to_name(err));
-    } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_CONNECTED) {
-        //set_static_ip(arg);
-    } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
-         esp_err_t err = esp_wifi_connect();
-         ESP_LOGI(TAG, "%s", esp_err_to_name(err));
-         ESP_LOGI(TAG, "retry to connect to the AP");
-    } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
+    if (event_base == WIFI_EVENT) {
+        if (event_id == WIFI_EVENT_STA_START) {
+            esp_err_t err = esp_wifi_connect();
+            ESP_LOGI(TAG, "esp_wifi_connect: %s", esp_err_to_name(err));
+        }
+        else if (event_id == WIFI_EVENT_STA_CONNECTED) {
+            set_static_ip(arg);
+        }
+        else if (event_id == WIFI_EVENT_STA_DISCONNECTED) {
+            esp_err_t err = esp_wifi_connect();
+            ESP_LOGI(TAG, "esp_wifi_connect: %s", esp_err_to_name(err));
+            ESP_LOGI(TAG, "retry to connect to the AP");
+        }
+    }
+    else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
         ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
         ESP_LOGI(TAG, "got ip:" IPSTR, IP2STR(&event->ip_info.ip));
     }
@@ -545,12 +559,12 @@ static void init_wifi() {
     esp_event_handler_instance_t instance_got_ip;
     ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT,
                                                         ESP_EVENT_ANY_ID,
-                                                        &event_handler,
+                                                        &wifi_event_handler,
                                                         sta_netif,
                                                         &instance_any_id));
     ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT,
                                                         IP_EVENT_STA_GOT_IP,
-                                                        &event_handler,
+                                                        &wifi_event_handler,
                                                         sta_netif,
                                                         &instance_got_ip));
 
@@ -558,47 +572,42 @@ static void init_wifi() {
         .sta = {
             .ssid = WIFI_SSID,
             .password = WIFI_PASS,
-            /* Setting a password implies station will connect to all security modes including WEP/WPA.
-             * However these modes are deprecated and not advisable to be used. Incase your Access point
-             * doesn't support WPA2, these mode can be enabled by commenting below line */
           //.threshold.authmode = WIFI_AUTH_WEP,
         },
     };
-    ESP_LOGI(TAG, "%s", WIFI_SSID);
-    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA) );
-    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config) );
-    ESP_ERROR_CHECK(esp_wifi_start() );
+    ESP_LOGI(TAG, "Connecting to: %s", WIFI_SSID);
+    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
+    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
+    ESP_ERROR_CHECK(esp_wifi_start());
 
     ESP_LOGI(TAG, "init_wifi finished.");
 }
 
 void app_main(void)
 {
+    //Initialize NVS
+    esp_err_t ret = nvs_flash_init();
+    if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+        ESP_ERROR_CHECK(nvs_flash_erase());
+        ret = nvs_flash_init();
+    }
+    ESP_ERROR_CHECK(ret);
 
-   static httpd_handle_t server = NULL;
+    //Initialize the underlying TCP/IP stack
+    ESP_ERROR_CHECK(esp_netif_init());
 
-   //Initialize NVS
-   esp_err_t ret = nvs_flash_init();
-   if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
-      ESP_ERROR_CHECK(nvs_flash_erase());
-      ret = nvs_flash_init();
-   }
-   ESP_ERROR_CHECK(ret);
+    //Create default event loop
+    ESP_ERROR_CHECK(esp_event_loop_create_default());
 
-   //Initialize the underlying TCP/IP stack
-   ESP_ERROR_CHECK(esp_netif_init());
+    init_wifi();
+    init_sdcard();
+    init_camera();
 
-   //Create default event loop
-   ESP_ERROR_CHECK(esp_event_loop_create_default());
+    static httpd_handle_t server;
 
-   init_wifi();
-   init_sdcard();
+    ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &connect_handler, &server));
+    ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, WIFI_EVENT_STA_DISCONNECTED, &disconnect_handler, &server));
 
-   ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &connect_handler, &server));
-   ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, WIFI_EVENT_STA_DISCONNECTED, &disconnect_handler, &server));
-
-   init_camera();
-
-   /* Start the server for the first time */
-   server = start_webserver();
+    /* Start the server for the first time */
+    server = start_webserver();
 }

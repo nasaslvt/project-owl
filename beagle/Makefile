@@ -1,26 +1,17 @@
-CC := g++
-CFLAGS := -Wall -Werror -O2
-DEBUG_FLAGS := -g
-OBJ := build/tcp.o build/parser.o
-#uncomment below line for debug build
-#CFLAGS += DEBUG_FLAGS
+CC = gcc
+CFLAGS = -Wall -Werror -g
 
-all: build/kiss_receive build/kiss_transmit build/kiss_parser
+all: main
 
-build/tcp.o: tcp.cpp
-	$(CC) $(CFLAGS) -c tcp.cpp -o build/tcp.o
+main: servo.o bbio/libbbio.a
+	$(CC) $(CFLAGS) -o main main.c servo.o bbio/libbbio.a
 
-build/parser.o: parser.cpp
-	$(CC) $(CFLAGS) -c parser.cpp -o build/parser.o
+servo.o: servo.c servo.h
+	$(CC) $(CFLAGS) -c servo.c
 
-build/kiss_receive: kiss_receive.cpp $(OBJ)
-	$(CC) $(CFLAGS) kiss_receive.cpp -o build/kiss_receive $(OBJ)
-
-build/kiss_transmit: kiss_transmit.cpp $(OBJ)
-	$(CC) $(CFLAGS) kiss_transmit.cpp -o build/kiss_transmit $(OBJ)
-
-build/kiss_parser: kiss_parser.cpp $(OBJ)
-	$(CC) $(CFLAGS) kiss_parser.cpp -o build/kiss_parser $(OBJ)
+bbio/libbbio.a:
+	cd bbio && make
 
 clean:
-	rm -f build/*
+	rm -f main *.o
+	cd bbio && make clean
