@@ -1,44 +1,59 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "tcp.h"
 
 #define KISSPORT 8001
 #define LOCALHOST "127.0.0.1"
 
-int main() {
+#define CAMERAPORT 8080
+#define CAMERAIP "192.168.8.10"
 
-    int res = 0;
+int init_conn(int port, const char *addr) {
 
-    int socket_fd = create_tcp_socket();
-    if (socket_fd < 0) {
-        fprintf(stderr, "Failed to create tcp socket\n");
-        return 1;
+    int fd = create_tcp_socket();
+    if (fd < 0) {
+        fprintf(stderr, "%s : Failed to create tcp socket\n", addr);
+        return -1;
     }
 
     sockaddr_in server = create_server(KISSPORT, LOCALHOST);
 
-    printf("Attempting to connect socket to %s\n", address_string);
-    result = connect(socket_fd, (struct sockaddr *) &server, sizeof(server));
-    if (result < 0)
+    if (connect(fd, (struct sockaddr *) &server, sizeof(server)) < 0)
     {
-        fprintf(stderr, "Failed to connect\n");
-        return 1;
+        fprintf(stderr, "%s : Failed to connect\n", addr);
+        return -1;
     }
-    fprintf("Connection succesful.\n");
+    printf("%s : Connection succesful.\n", addr);
 
-    char buffer[256];
+    return fd;
+}
+
+int main() {
+
+    int res = 0;
+
+    int camera_socket_fd = init_conn(CAMERAPORT, CAMERAIP);
+    int radio_socket_fd = init_conn(KISSPORT, LOCALHOST);
+
+    char request[256];
+    char response[256];
+
+    strcpy(request, "GET / HTTP/1.1\r\nHost: 192.168.8.10:8000\r\n\r\n");
+    write_string(camera_socket_fd, request);
+    read_string(camera_socket_fd, response);
 
     while (1) {
-        printf("Waiting for data...\n");
-        result = read_buffer(socket_fd, buffer, 256);
-        if (result < 0) {
-            fprintf(stderr, "Failed reading");
+        res = read_buffer(radio_socket_fd, response, 256);
+        if (res < 0) {
+            //fprintf(stderr, "Failed reading\n");
         }
 
         //TODO
     }
 
-    close(socket_fd); 
+    close(radio_socket_fd);
+    close(camera_socket_fd);
     return 0;
 }
