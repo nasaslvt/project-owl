@@ -26,11 +26,16 @@ int main(int argc, char *argv[])
     }
     close(fd);
 
-    uint32_t *pru0_dram = pru + (PRU0_DRAM + 0x200)/4; // Points to 0x200 of PRU0 memory
+    int prunum;
+
+    printf("PRU (0 or 1): ");
+    scanf("%d", &prunum);
+
+    uint32_t *pru_dram = pru + ((prunum ? PRU1_DRAM : PRU0_DRAM) + 0x200)/4;
 
     while (1) {
-        float dc = (float)pru0_dram[0]/(float)pru0_dram[1] * 100;
+        float dc = (float)pru_dram[0]/(float)pru_dram[1] * 100;
         float theta = (dc - 2.9) * 360 / (97.1 - 2.9 + 1);
-        printf("Swivel Angle: %f\n", theta);
+        printf("Feedback Angle: %f\n", theta);
     }
 }

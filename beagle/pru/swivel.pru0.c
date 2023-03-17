@@ -24,10 +24,10 @@ void main(void)
     while(1) {
         PRU0_CTRL.CYCLE = 0;
 
-        while(__R31 & P8_15);        
+        while(__R31 & P8_15);
         pru0_dram[0] = PRU0_CTRL.CYCLE;
 
-        while((__R31 & P8_15)==0);
+        while((__R31 & P8_15) == 0);
         pru0_dram[1] = PRU0_CTRL.CYCLE;
     }
 }
