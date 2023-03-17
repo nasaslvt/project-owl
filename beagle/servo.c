@@ -4,6 +4,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <syslog.h>
+#include <time.h>
 #include <sys/mman.h>
 
 #include "servo.h"
@@ -14,14 +15,10 @@
 #define PRU0_DRAM  0x00000
 #define PRU1_DRAM  0x02000
 
-#define MAXSPEED 30
+#define MAXSPEED 140
 
 #define DCMIN 3
 #define DCMAX 95.7
-
-#define Kp 0.3
-#define Ki 0.001
-#define Kd 10
 
 int init_servo(struct servo *servo) {
     BBIO_err err;
@@ -53,15 +50,19 @@ int init_servo(struct servo *servo) {
 }
 
 double servo_position(struct servo *servo) {
-    double duty_cycle = (double)servo->pru_dram[0] / (double)servo->pru_dram[1] * 100;
-    double angle = (duty_cycle - DCMIN) * 360 / (DCMAX - DCMIN + 1);
 
-    if (angle > 360) {
-       exit(-1);
-    }
+    double high_time = (double)servo->pru_dram[0];
+    double total_time = (double)servo->pru_dram[1];
+
+    if (total_time == 0) return 0;
+
+    double duty_cycle = high_time/total_time * 100;
+    double angle = (duty_cycle - DCMIN) * 360 / (DCMAX - DCMIN + 1);
 
     angle = angle - servo->zero;
     if (angle < 0) angle = 360 + angle;
+    if (angle > 360) angle = 360;
+
     printf("%f\n", angle);
     return angle;
 }
@@ -69,11 +70,14 @@ double servo_position(struct servo *servo) {
 void servo_zero(struct servo *servo) {
     servo->zero = 0.0;
     servo->zero = servo_position(servo);
-    printf("Servo Zero: %f\n", servo->zero);
+    syslog(LOG_DEBUG, "Servo: servo_zero: %f\n", servo->zero);
 }
 
 void servo_rotate(struct servo *servo, double value) {
-    double error = 1, integral, derivative, prev_error, output;
+
+    double error = 0, prev_error = 0, output = 0;
+    clock_t start_time = clock();
+
     while (1) {
 
         error = servo_position(servo) - value;
@@ -83,19 +87,28 @@ void servo_rotate(struct servo *servo, double value) {
             error = 360 + error;
         }
 
-        if (abs(error) <= 0.01 && output < 1) break;
+        if (abs(error) <= 0.01) {
+            servo_set_speed(servo, 0);
+            start_time = clock();
+            while (clock() - start_time < 0.1 * CLOCKS_PER_SEC);
 
-        integral += error;
-        derivative = error - prev_error;
+            if (abs(servo_position(servo) - value) < 0.01) break;
+        }
 
-        output = Kp * error + Ki * integral + Kd * derivative;
-        printf("%f,", output);
-        servo_set_speed(servo, output);
+        if (clock() - start_time >= 0.1 * CLOCKS_PER_SEC)
+        {
+            if (abs(error - prev_error) < 0.01) {
+                if (error > 0) { if (output > 0) output += 1; else output = 1;}
+                if (error < 0) { if (output < 0) output -= 1; else output = -1;}
+                servo_set_speed(servo, output);
+            } else {
+                output = 0;
+            }
 
-        prev_error = error;
+            prev_error = error;
+            start_time = clock();
+        }
     }
-
-    servo_set_speed(servo, 0);
 }
 
 void servo_set_speed(struct servo *servo, double speed) {
