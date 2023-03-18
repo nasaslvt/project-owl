@@ -4,7 +4,7 @@ CFLAGS = -Wall -Werror -g
 all: owl
 
 owl: owl.c servo.o bno055.o tcp.o bbio/libbbio.a
-	$(CC) $(CFLAGS) -o owl owl.c servo.o tcp.o bbio/libbbio.a
+	$(CC) $(CFLAGS) -lm -o owl owl.c servo.o tcp.o bno055.o bbio/libbbio.a
 
 bno055.o: imu/bno055.c imu/bno055.h
 	$(CC) $(CFLAGS) -c imu/bno055.c

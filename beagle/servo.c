@@ -59,9 +59,7 @@ double servo_position(struct servo *servo) {
     double duty_cycle = high_time/total_time * 100;
     double angle = (duty_cycle - DCMIN) * 360 / (DCMAX - DCMIN + 1);
 
-    angle = angle - servo->zero;
-    if (angle < 0) angle = 360 + angle;
-    if (angle > 360) angle = 360;
+    angle = (angle - servo->zero) % 360;
 
     printf("%f\n", angle);
     return angle;
@@ -73,7 +71,7 @@ void servo_zero(struct servo *servo) {
     syslog(LOG_DEBUG, "Servo: servo_zero: %f\n", servo->zero);
 }
 
-void servo_rotate(struct servo *servo, double value) {
+/*void servo_rotate(struct servo *servo, double value) {
 
     double error = 0, prev_error = 0, output = 0;
     clock_t start_time = clock();
@@ -109,7 +107,7 @@ void servo_rotate(struct servo *servo, double value) {
             start_time = clock();
         }
     }
-}
+}*/
 
 void servo_set_speed(struct servo *servo, double speed) {
 
