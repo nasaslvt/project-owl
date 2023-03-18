@@ -3,10 +3,13 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <math.h>
 #include <sys/ioctl.h>
 #include <linux/i2c-dev.h>
 
 #include "bno055.h"
+
+#define PI 3.14159265358979323846
 
 //  sudo apt-get install -y libi2c-dev
 
@@ -81,14 +84,21 @@ int main() {
    bno055_init(&bno);
    bno055_set_operation_mode(BNO055_OPERATION_MODE_NDOF);
 
+   int16_t accel_x_s16 = 0, accel_y_s16 = 0, accel_z_s16 = 0;
+   double norm, x, y, z;
+
    while(1)
    {
-       int16_t accel_x_s16 = 0, accel_y_s16 = 0, accel_z_s16 = 0;
        bno055_read_accel_x(&accel_x_s16);
        bno055_read_accel_y(&accel_y_s16);
        bno055_read_accel_z(&accel_z_s16);
 
-       printf("Accelerometer X: %d\nAccelerometer Y: %d\nAccelerometer Z: %d\n", accel_x_s16, accel_y_s16, accel_z_s16);
+       norm = sqrt(accel_x_s16 * accel_x_s16 + accel_y_s16 * accel_y_s16 + accel_z_s16 * accel_z_s16);
+       x = accel_x_s16/norm;
+       y = accel_y_s16/norm;
+       z = accel_z_s16/norm;
+
+       printf("X: %f Y: %f Z: %f\n", x, y, z);
    }
 
    return 0;
