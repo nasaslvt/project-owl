@@ -18,6 +18,8 @@
 #define CAMERAPORT 8080
 #define CAMERAIP "192.168.8.10"
 
+#define PI 3.14159265358979323846
+
 servo rotation_servo;
 servo swivel_servo;
 
@@ -41,6 +43,16 @@ int init_conn(int port, const char *addr) {
     return fd;
 }
 
+// Calculate Error (-180 to 180)
+float swivel_err(double value) {
+    double error = servo_position(&swivel_servo) - value;
+    error = fmod(error + 360, 360.0);
+    if (error > 180) {
+        error -= 360;
+    }
+    return error;
+}
+
 void swivel(double value) {
 
     double error = 0, prev_error = 0, output = 0;
@@ -48,34 +60,30 @@ void swivel(double value) {
 
     while (1) {
 
-        error = servo_position(&swivel_servo) - value;
-        if (error > 180) {
-            error = -360 + error;
-        } else if (error < -180) {
-            error = 360 + error;
-        }
+        error = swivel_err(value);
 
-        if (fabs(error) <= 0.5) {
+        // Exist Condition
+        if (fabs(error) <= 1) {
             servo_set_speed(&swivel_servo, 0);
-            start_time = clock();
-            while (clock() - start_time < 0.1 * CLOCKS_PER_SEC);
 
-            if (fabs(servo_position(&swivel_servo) - value) < 0.5) break;
+            start_time = clock();
+            while (clock() - start_time < CLOCKS_PER_SEC/10);
+
+            if (fabs(swivel_err(value)) <= 1) break;
         }
 
-        if (clock() - start_time >= 0.1 * CLOCKS_PER_SEC)
+        if (clock() - start_time >= CLOCKS_PER_SEC/100)
         {
+            //printf("derivative: %f error: %f output %f\n", error - prev_error, error, output);
             if (output * error < 0) {
-                output *= -1;
+                output = 0;
                 servo_set_speed(&swivel_servo, output);
             }
 
-            if (fabs(error - prev_error) < 0.01) {
-                if (error > 0) output += 1;
-                if (error < 0) output -= 1;
+            if (fabs(error - prev_error) < 1) {
+                if (error > 0) output += 0.1;
+                if (error < 0) output -= 0.1;
                 servo_set_speed(&swivel_servo, output);
-            } else {
-                output = 0;
             }
 
             prev_error = error;
@@ -84,90 +92,88 @@ void swivel(double value) {
     }
 }
 
-#define PI 3.14159265358979323846
-
 void self_right() {
 
     double error = 0, prev_error = 0, output = 0, integral = 0, derivative = 0;
     double x = 0, y = 0, z = 0;
-    //clock_t start_time = clock();
+    clock_t start_time = clock();
 
     while (1) {
 
-        bno055_read_accel_norm(&x,&y,&z);
+        bno055_read_accel_norm(&x, &y, &z);
 
         error = atan2(y, -z) * 180/PI;
 
-        if (fabs(x) > 0.92) {
-           break;
-        }
-
-        printf("Error: %f\n", error);
-
-        /*if (fabs(error) < 10) {
-            integral = prev_error = error = 0;
-        }*/
-
-        /*if (fabs(error) <= 0.01) {
+        if (fabs(x) > 0.92 || fabs(error) < 0.1) {
             servo_set_speed(&rotation_servo, 0);
-            start_time = clock();
-            while (clock() - start_time < 1 * CLOCKS_PER_SEC);
 
-            error = atan2(y, -z) * 180/PI;
-            if (error < 0.01) break;
-        }*/
+            start_time = clock();
+            while (clock() - start_time < CLOCKS_PER_SEC);
+
+            bno055_read_accel_norm(&x, &y, &z);
+            if (fabs(x) > 0.92 || fabs(error) < 0.1) break;
+        }
 
         integral += error;
         derivative = error - prev_error;
 
-        output = 3 * error + 0.01 * integral + 0 * derivative;
+        output = 3 * error + 0.0001 * integral + 0 * derivative;
         servo_set_speed(&rotation_servo, output);
 
         prev_error = error;
     }
 
     servo_set_speed(&rotation_servo, 0);
-
 }
 
 void rotate(double value) {
-    double error = 0, prev_error = 0, output = 0;
+
+    self_right();
+    servo_zero(&rotation_servo);
+
+    int reverse = value < 0;
+
+    double error = 0, prev_error = 0, output = 0, position = 0;
     clock_t start_time = clock();
 
-    value = value / 0.316;
+    value = fabs(value);
+    value /= .316;
 
     while (1) {
 
-        error = servo_position(&rotation_servo) - value;
-        if (error > 360) {
-            error = 360;
-        } else if (error < -360) {
-            error = -360;
+        double position_temp = servo_position(&rotation_servo);
+        if (reverse) {
+            position_temp = 360 - position_temp;
+        }
+        if (fabs(position_temp - position) < 180) {
+            position = position_temp;
         }
 
-        printf("Error: %f %f\n", error, output);
+        error = position - value;
+        if (reverse) error *= -1;
 
-        if (fabs(error) <= 0.5) {
+        if (fabs(error) <= 4) {
             servo_set_speed(&rotation_servo, 0);
-            start_time = clock();
-            while (clock() - start_time < 0.1 * CLOCKS_PER_SEC);
 
-            if (fabs(servo_position(&rotation_servo) - value) < 0.5) break;
+            start_time = clock();
+            while (clock() - start_time < CLOCKS_PER_SEC/10);
+
+            if (reverse && fabs((360 - servo_position(&rotation_servo)) - value) < 4) break;
+            else if (fabs(servo_position(&rotation_servo) - value) < 4) break;
         }
 
-        if (clock() - start_time >= 0.1 * CLOCKS_PER_SEC)
+        if (clock() - start_time >= CLOCKS_PER_SEC/100)
         {
+            //printf("derivative: %f position %f error: %f output %f\n", error - prev_error, position, error, output);
             if (output * error < 0) {
-                output *= -1;
+                output = 0;
                 servo_set_speed(&rotation_servo, output);
             }
 
-            if (fabs(error - prev_error) < 0.01) {
-                if (error > 0) output += 1;
-                if (error < 0) output -= 1;
+            if (fabs(error - prev_error) < 4) {
+                if (error > 0) output += 0.1;
+                if (error < 0) output -= 0.1;
                 servo_set_speed(&rotation_servo, output);
-            } else {
-                //output = 0;
             }
 
             prev_error = error;
@@ -178,19 +184,17 @@ void rotate(double value) {
 
 int main() {
 
-    int res = 0;
-
     int camera_socket_fd = init_conn(CAMERAPORT, CAMERAIP);
     int radio_socket_fd = init_conn(KISSPORT, LOCALHOST);
 
     imu_init();
 
-    swivel_servo.ctrl_pin = "P8_13";
+    swivel_servo.ctrl_pin = "P9_16";
     swivel_servo.prunum = 0;
     init_servo(&swivel_servo);
     servo_zero(&swivel_servo);
 
-    rotation_servo.ctrl_pin = "P9_16";
+    rotation_servo.ctrl_pin = "P8_13";
     rotation_servo.prunum = 1;
     init_servo(&rotation_servo);
 
@@ -201,20 +205,15 @@ int main() {
     write_string(camera_socket_fd, request);
     read_string(camera_socket_fd, response);
 
-    float swivelangle;
-    float rotateangle;
+    float angle;
+    servo_zero(&swivel_servo);
     while (1) {
-        res = read_buffer(radio_socket_fd, response, 256);
+        /*res = read_buffer(radio_socket_fd, response, 256);
         if (res < 0) {
             //fprintf(stderr, "Failed reading\n");
-        }
-        scanf("%f %f", &swivelangle, &rotateangle);
-        printf("Self Right\n");
-        self_right();
-        printf("Swivel %f\n", swivelangle);
-        swivel(swivelangle);
-        servo_zero(&rotation_servo);
-        printf("Rotate %f\n", rotateangle);
+        }*/
+        scanf("%f", &angle);
+        swivel(angle);
     }
 
     close(radio_socket_fd);
